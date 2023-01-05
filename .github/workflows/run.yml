@@ -1,0 +1,26 @@
+name: Run Rust Burnout Meter
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run rust-burnout-meter
+        run: |
+          # check if the binary exists
+          if [ -f target/release/rust-burnout-meter ]; then
+            # run the binary, checking if it exits with 0
+            if target/release/rust-burnout-meter; then
+              echo "Success!"
+            else
+              echo "Error when running binary"
+              exit 1
+            fi
+            
+          else
+            echo "Binary not found"
+            exit 1
+          fi

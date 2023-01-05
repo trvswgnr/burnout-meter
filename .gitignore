@@ -1,3 +1,8 @@
-target/
 .env
 .DS_Store
+
+# ignore all files in the target directory, but track the file /target/release/rust-burnout-meter
+target/*  
+!target/release/
+target/release/*
+!target/release/rust-burnout-meter

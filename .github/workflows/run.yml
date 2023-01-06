@@ -28,7 +28,6 @@ jobs:
               echo "Error when running binary"
               exit 1
             fi
-            
           else
             echo "Binary not found"
             exit 1

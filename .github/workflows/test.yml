@@ -1,0 +1,26 @@
+name: Test Rust Burnout Meter
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+  WAKATIME_API_KEY: "test_wakatime_api_key"
+  TWITTER_APP_ACCESS_TOKEN: "test_twitter_app_access_token"
+  TWITTER_APP_ACCESS_TOKEN_SECRET: "test_twitter_app_access_token_secret"
+  TWITTER_APP_API_KEY: "test_twitter_app_api_key"
+  TWITTER_APP_API_SECRET_KEY: "test_twitter_app_api_secret_key"
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test

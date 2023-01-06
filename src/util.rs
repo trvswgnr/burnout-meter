@@ -1,4 +1,7 @@
-use std::error::Error;
+use dotenv::dotenv;
+use std::{env, error::Error, sync::Once};
+
+static INIT: Once = Once::new();
 
 /// Create a meter with emoji to show how close you are to burnout.
 ///
@@ -12,8 +15,8 @@ use std::error::Error;
 /// use std::error::Error;
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
-///     let meter = create_meter(Some(10f64), 170f64, 8)?;
-///     assert_eq!(meter, "🟩🟩🟩🟩🟩🟩🟩🟩");
+///     let meter = create_meter(Some(10f64), 100f64, 10)?;
+///     assert_eq!(meter, "🟩⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️");
 ///     Ok(())
 /// }
 /// ```
@@ -38,6 +41,11 @@ pub(crate) fn create_meter(
         filled += 1;
     }
 
+    // make sure the meter is never longer than the length set
+    if filled > length {
+        filled = length;
+    }
+
     let empty = length - filled;
 
     let mut emoji = String::from("🟩");
@@ -59,6 +67,18 @@ pub(crate) fn create_meter(
     let meter = emoji.repeat(filled as usize) + &blank.repeat(empty as usize);
 
     Ok(meter)
+}
+
+pub(crate) fn get_env_var(key: &str) -> Result<String, Box<dyn Error>> {
+    INIT.call_once(|| match dotenv().ok() {
+        Some(_) => println!(".env file detected, loading..."),
+        None => println!("No .env file found."),
+    });
+
+    match env::var(key) {
+        Ok(val) => Ok(val),
+        Err(_) => Err(format!("{key} not set").into()),
+    }
 }
 
 #[cfg(test)]

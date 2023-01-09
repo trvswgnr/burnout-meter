@@ -8,7 +8,7 @@ use std::error::Error;
 use crate::util::get_env_var;
 
 #[derive(Deserialize, Debug, Serialize)]
-pub(crate) struct Update {
+pub(crate) struct Profile {
     pub location: Option<String>,
 }
 
@@ -40,19 +40,19 @@ pub(crate) trait FormField: Into<String> + Serialize + Clone {}
 impl<T> FormField for T where T: Into<String> + Serialize + Clone {}
 
 #[derive(Debug, Clone)]
-pub(crate) struct TwitterClient {
+pub(crate) struct Twitter {
     client: Client,
     credentials: Credentials,
     base_url: Url,
 }
 
-impl TwitterClient {
-    pub(crate) fn new() -> Result<TwitterClient, Box<dyn Error>> {
+impl Twitter {
+    pub(crate) fn new() -> Result<Self, Box<dyn Error>> {
         let client = Client::new();
         let credentials = Credentials::new()?;
         let base_url = "https://api.twitter.com".parse().ok().unwrap();
 
-        Ok(TwitterClient {
+        Ok(Self {
             client,
             credentials,
             base_url,
@@ -84,19 +84,16 @@ impl TwitterClient {
     pub(crate) async fn update_profile_location(
         &self,
         location: impl FormField,
-    ) -> Result<Update, Box<dyn Error>> {
+    ) -> Result<Profile, Box<dyn Error>> {
         let endpoint = "/1.1/account/update_profile.json";
 
         let url = self.base_url.join(endpoint).unwrap();
 
-        let Credentials {
-            consumer_key,
-            consumer_secret,
-            token,
-            token_secret,
-        } = &self.credentials;
-
-        let secrets = Secrets::new(consumer_key, consumer_secret).token(token, token_secret);
+        let secrets = Secrets::new(
+            &self.credentials.consumer_key,
+            &self.credentials.consumer_secret,
+        )
+        .token(&self.credentials.token, &self.credentials.token_secret);
 
         let client = self.client.clone();
 
@@ -108,7 +105,7 @@ impl TwitterClient {
         let response = response.send().await?;
 
         let body = response.text().await?;
-        let result: Result<Update, _> = from_str(&body);
+        let result: Result<Profile, _> = from_str(&body);
 
         match result {
             Ok(update) => Ok(update),
@@ -119,7 +116,7 @@ impl TwitterClient {
 
 #[cfg(test)]
 mod tests {
-    use super::TwitterClient;
+    use super::Twitter;
     use httpmock::prelude::*;
     use serde_json::json;
     use std::error::Error;
@@ -139,7 +136,7 @@ mod tests {
                 .body(json!({ "location": mock_location }).to_string());
         });
 
-        let mut client = TwitterClient::new()?;
+        let mut client = Twitter::new()?;
 
         client.base_url = mock_server.base_url().parse()?;
         let result = client.update_profile_location(mock_location).await;

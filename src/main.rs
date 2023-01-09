@@ -11,45 +11,31 @@ mod util;
 mod wakatime;
 
 use std::error::Error;
-use twitter::TwitterClient;
+use twitter::Twitter;
 use util::create_meter;
 
-struct CollectedData {
-    update: twitter::Update,
-    hours: Option<f64>,
-    meter: String,
-}
+use crate::wakatime::WakaTime;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let data = run().await?;
+    let wakatime = WakaTime::new()?;
+    let twitter = Twitter::new()?;
+    let hours = wakatime.get_time_last_n_days(30).await?;
+    let meter = create_meter(hours, 170f64, 8)?;
+    let location = meter.clone() + " to burnout";
+    let update = twitter.update_profile_location(location).await?;
 
-    match data.update.location {
+    match update.location {
         Some(location) => println!("Location updated to {location}"),
         None => panic!("Location not updated"),
     };
 
-    let hours = data.hours.unwrap_or(0f64);
+    let hours = hours.unwrap_or(0f64);
     let hours_til_burnout = ((170f64 - hours) * 100f64).round() / 100f64;
 
     println!("{hours} hours in the last 30 days");
     println!("Hours til burnout: {hours_til_burnout}",);
-    println!("Generated Meter: {}", data.meter);
+    println!("Generated Meter: {}", meter);
 
     Ok(())
-}
-
-async fn run() -> Result<CollectedData, Box<dyn Error>> {
-    let wakatime_client = wakatime::WakaTimeClient::new()?;
-    let twitter_client = TwitterClient::new()?;
-    let hours = wakatime_client.get_time_last_n_days(30).await?;
-    let meter = create_meter(hours, 170f64, 8)?;
-    let location = meter.clone() + " to burnout";
-    let update = twitter_client.update_profile_location(location).await?;
-
-    Ok(CollectedData {
-        update,
-        hours,
-        meter,
-    })
 }

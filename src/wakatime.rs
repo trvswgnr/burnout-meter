@@ -1,4 +1,4 @@
-use chrono::{Duration, Utc};
+use chrono::{Duration, Timelike, Utc};
 use reqwest::{Client, Url};
 use serde::Deserialize;
 use serde_json::from_str;
@@ -17,13 +17,13 @@ struct Total {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct WakaTimeClient {
+pub(crate) struct WakaTime {
     client: Client,
     base_url: Url,
     api_key: String,
 }
 
-impl WakaTimeClient {
+impl WakaTime {
     pub(crate) fn new() -> Result<Self, Box<dyn Error>> {
         let api_key = get_env_var("WAKATIME_API_KEY")?;
         let base_url = "https://wakatime.com".parse()?;
@@ -61,8 +61,8 @@ impl WakaTimeClient {
         &self,
         days: i64,
     ) -> Result<Option<f64>, Box<dyn Error>> {
-        let start_date = (Utc::now() - Duration::days(days)).to_rfc3339();
-        let end_date = Utc::now().to_rfc3339();
+        let start_date = Self::get_start_datetime(days);
+        let end_date = Self::get_end_datetime();
 
         let endpoint = "/api/v1/users/current/summaries";
         let url = self.base_url.join(endpoint)?;
@@ -70,7 +70,7 @@ impl WakaTimeClient {
         let response = self
             .client
             .get(url)
-            .query(&[
+            .query(&vec![
                 ("api_key", &self.api_key),
                 ("start", &start_date),
                 ("end", &end_date),
@@ -86,25 +86,66 @@ impl WakaTimeClient {
             None => Ok(None),
         }
     }
+
+    /// Gets the start date as an ISO string for the WakaTime API request.
+    ///
+    /// Uses the `chrono` crate to get the current date and subtract the number of days.
+    fn get_start_datetime(days: i64) -> String {
+        let mut datetime = Utc::now() - Duration::days(days);
+
+        // remove the nanoseconds from the datetime
+        datetime = datetime.with_nanosecond(0).unwrap();
+
+        // return converted to RFC 3339 and ISO 8601 string (e.g. 2022-12-07T00:00:00+00:00)
+        datetime.to_rfc3339()
+    }
+
+    /// Gets the end date as an ISO string for the WakaTime API request.
+    fn get_end_datetime() -> String {
+        let mut datetime = Utc::now();
+
+        // remove the nanoseconds from the datetime
+        datetime = datetime.with_nanosecond(0).unwrap();
+
+        // return converted to RFC 3339 and ISO 8601 string (e.g. 2022-12-07T00:00:00+00:00)
+        datetime.to_rfc3339()
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::WakaTimeClient;
+    use super::WakaTime;
+    use chrono::{Duration, NaiveDate};
     use httpmock::prelude::*;
     use serde_json::json;
     use std::error::Error;
+
+    #[test]
+    fn test_get_start_and_end_dates() -> Result<(), Box<dyn Error>> {
+        let start = WakaTime::get_start_datetime(30);
+        let end = WakaTime::get_end_datetime();
+
+        let start_date = NaiveDate::parse_from_str(&start[..10], "%Y-%m-%d")?;
+        let end_date = NaiveDate::parse_from_str(&end[..10], "%Y-%m-%d")?;
+
+        assert_eq!(start_date, end_date - Duration::days(30));
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn test_get_time_last_n_days() -> Result<(), Box<dyn Error>> {
         let mock_server = MockServer::start();
 
+        let start_date = WakaTime::get_start_datetime(30);
+        let end_date = WakaTime::get_end_datetime();
+
         let mock = mock_server.mock(|when, then| {
             when.method(GET)
                 .path("/api/v1/users/current/summaries")
                 .query_param_exists("api_key")
-                .query_param_exists("start")
-                .query_param_exists("end");
+                .query_param("start", &start_date)
+                .query_param("end", &end_date);
             then.status(200)
                 .header("content-type", "application/json")
                 .body(
@@ -120,7 +161,7 @@ mod tests {
                 );
         });
 
-        let mut client = WakaTimeClient::new()?;
+        let mut client = WakaTime::new()?;
 
         client.base_url = mock_server.base_url().parse()?;
         let response = client.get_time_last_n_days(30).await;

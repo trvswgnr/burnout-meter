@@ -1,4 +1,4 @@
-name: Test Rust Burnout Meter
+name: Tests
 on:
   push:
   pull_request:

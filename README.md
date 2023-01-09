@@ -1,5 +1,8 @@
 # WakaTime Code Burnout Meter in Twitter Profile
 
+![tests](https://github.com/trvswgnr/burnout-meter/actions/workflows/test.yml/badge.svg?branch=main)
+![last run](https://github.com/trvswgnr/burnout-meter/actions/workflows/run.yml/badge.svg?branch=main&event=schedule)
+
 Inspired by [trash's Twitter profile](https://twitter.com/trashh_dev), this repo adds a burnout meter to your Twitter profile. It uses  [WakaTime](https://wakatime.com/) to get your coding activity and calculates the burnout percentage based on the number of hours you've coded in the last 30 days. It then creates a meter with emoji and updates your Twitter profile location with the meter.
 
 Here's how it will look at the different stages of burnout:

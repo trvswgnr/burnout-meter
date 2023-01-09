@@ -13,7 +13,7 @@ env:
   TWITTER_APP_API_SECRET_KEY: "test_twitter_app_api_secret_key"
 
 jobs:
-  build:
+  test:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2

@@ -23,9 +23,9 @@ jobs:
       - name: Run rust-burnout-meter
         run: |
           # check if the binary exists
-          if [ -f target/release/rust-burnout-meter-linux ]; then
+          if [ -f target/release/rust-burnout-meter ]; then
             # run the binary, checking if it exits with 0
-            if target/release/rust-burnout-meter-linux; then
+            if target/release/rust-burnout-meter; then
               echo "Success!"
             else
               echo "Error when running binary"

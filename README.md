@@ -24,10 +24,14 @@ It uses cron with GitHub Actions to run every 6 hours, but can also be run manua
 1. Create a [Twitter app](https://developer.twitter.com/en/apps) and get your API keys
 1. Create a [GitHub secret](https://docs.github.com/en/actions/reference/encrypted-secrets) for each of the following:
     - `WAKATIME_API_KEY` - Your WakaTime API key
-    - `TWITTER_APP_ACCESS_TOKEN` - Access token for your Twitter app
-    - `TWITTER_APP_ACCESS_TOKEN_SECRET` - Access token secret for your Twitter app
-    - `TWITTER_APP_API_KEY` - Consumer API key for your Twitter app
-    - `TWITTER_APP_API_SECRET_KEY` - Consumer API secret key for your Twitter app
+    - `TWITTER_ACCESS_TOKEN` - Access token for your Twitter app
+    - `TWITTER_ACCESS_TOKEN_SECRET` - Access token secret for your Twitter app
+    - `TWITTER_CONSUMER_KEY` - Consumer API key for your Twitter app
+    - `TWITTER_CONSUMER_SECRET` - Consumer API secret key for your Twitter app
+1. You can also optionaly set the following secrets to customize the meter:
+    - `BURNOUT_LIMIT` - The number of hours you want to be considered "burned out" (default: 180)
+    - `BURNOUT_DAYS` - The number of days to use for calculating burnout (default: 30)
+    - `METER_LENGTH` - The number of emoji to use for the meter (default: 8)
 
 ## License
 

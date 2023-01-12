@@ -4,52 +4,32 @@ use reqwest_oauth1::Secrets;
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 use std::error::Error;
-
-use crate::util::get_env_var;
-
 #[derive(Deserialize, Debug, Serialize)]
-pub(crate) struct Profile {
+pub struct Profile {
     pub location: Option<String>,
 }
 
 #[derive(Debug, Clone)]
-struct Credentials {
-    pub(crate) consumer_key: String,
-    pub(crate) consumer_secret: String,
-    pub(crate) token: String,
-    pub(crate) token_secret: String,
+pub struct Credentials {
+    pub consumer_key: String,
+    pub consumer_secret: String,
+    pub access_token: String,
+    pub access_token_secret: String,
 }
 
-impl Credentials {
-    fn new() -> Result<Credentials, Box<dyn Error>> {
-        let consumer_key = get_env_var("TWITTER_APP_API_KEY")?;
-        let consumer_secret = get_env_var("TWITTER_APP_API_SECRET_KEY")?;
-        let token = get_env_var("TWITTER_APP_ACCESS_TOKEN")?;
-        let token_secret = get_env_var("TWITTER_APP_ACCESS_TOKEN_SECRET")?;
-
-        Ok(Credentials {
-            consumer_key,
-            consumer_secret,
-            token,
-            token_secret,
-        })
-    }
-}
-
-pub(crate) trait FormField: Into<String> + Serialize + Clone {}
+pub trait FormField: Into<String> + Serialize + Clone {}
 impl<T> FormField for T where T: Into<String> + Serialize + Clone {}
 
 #[derive(Debug, Clone)]
-pub(crate) struct Twitter {
+pub struct Twitter {
     client: Client,
     credentials: Credentials,
     base_url: Url,
 }
 
 impl Twitter {
-    pub(crate) fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new(credentials: Credentials) -> Result<Self, Box<dyn Error>> {
         let client = Client::new();
-        let credentials = Credentials::new()?;
         let base_url = "https://api.twitter.com".parse().ok().unwrap();
 
         Ok(Self {
@@ -81,7 +61,7 @@ impl Twitter {
     ///     Ok(())
     /// }
     /// ```
-    pub(crate) async fn update_profile_location(
+    pub async fn update_location(
         &self,
         location: impl FormField,
     ) -> Result<Profile, Box<dyn Error>> {
@@ -93,7 +73,10 @@ impl Twitter {
             &self.credentials.consumer_key,
             &self.credentials.consumer_secret,
         )
-        .token(&self.credentials.token, &self.credentials.token_secret);
+        .token(
+            &self.credentials.access_token,
+            &self.credentials.access_token_secret,
+        );
 
         let client = self.client.clone();
 
@@ -116,7 +99,7 @@ impl Twitter {
 
 #[cfg(test)]
 mod tests {
-    use super::Twitter;
+    use super::{Credentials, Twitter};
     use httpmock::prelude::*;
     use serde_json::json;
     use std::error::Error;
@@ -136,10 +119,17 @@ mod tests {
                 .body(json!({ "location": mock_location }).to_string());
         });
 
-        let mut client = Twitter::new()?;
+        let credentials = Credentials {
+            consumer_key: "consumer_key".to_string(),
+            consumer_secret: "consumer_secret".to_string(),
+            access_token: "access_token".to_string(),
+            access_token_secret: "access_token_secret".to_string(),
+        };
+
+        let mut client = Twitter::new(credentials)?;
 
         client.base_url = mock_server.base_url().parse()?;
-        let result = client.update_profile_location(mock_location).await;
+        let result = client.update_location(mock_location).await;
 
         mock.assert();
         assert!(result.is_ok(), "Result is not ok: {}", result.unwrap_err());

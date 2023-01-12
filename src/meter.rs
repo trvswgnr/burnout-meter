@@ -1,9 +1,9 @@
-#![allow(dead_code)]
-
 use std::{
     error::Error,
     fmt::{Display, Formatter},
 };
+
+use crate::util::get_env_var;
 
 /// A struct to build a meter with emoji to show how close you are to code burnout.
 ///
@@ -27,11 +27,12 @@ pub struct Builder {
 impl Builder {
     pub fn new() -> Self {
         let current = Some(0 as f64);
-        let max = 170f64;
-        let length = 8;
+        let max: f64 = get_env_var("BURNOUT_LIMIT").unwrap_or(160f64);
+        let length = get_env_var("METER_LENGTH").unwrap_or(8u8);
         let meter = Self::create_meter(current, max, length).unwrap_or_else(|_| {
             panic!("Failed to create meter. Current value: {:?}", current);
         });
+
         Self {
             current,
             max,
@@ -43,6 +44,7 @@ impl Builder {
     /// Build the meter.
     pub fn build(&mut self) -> Result<&mut Self, Box<dyn Error>> {
         self.meter = Self::create_meter(self.current, self.max, self.length)?;
+
         Ok(self)
     }
 
@@ -106,27 +108,35 @@ impl Builder {
     }
 
     /// Set the current value.
-    pub fn current<T: Into<f64>>(&mut self, current: T) -> &mut Self {
+    pub fn set_current<T: Into<f64>>(&mut self, current: T) -> &mut Self {
         self.current = Some(current.into());
+
         self
     }
 
     /// Set the max value.
-    pub fn max<T: Into<f64>>(&mut self, max: T) -> &mut Self {
+    pub fn set_max<T: Into<f64>>(&mut self, max: T) -> &mut Self {
         self.max = max.into();
+
         self
     }
 
     /// Set the length of the meter.
-    pub fn length<T: Into<u8>>(&mut self, length: T) -> &mut Self {
+    pub fn set_length<T: Into<u8>>(&mut self, length: T) -> &mut Self {
         self.length = length.into();
+
         self
+    }
+
+    pub fn max(&self) -> &f64 {
+        &self.max
     }
 }
 
 impl Display for Builder {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let meter = &self.meter;
+
         write!(f, "{}", meter)
     }
 }
@@ -158,25 +168,25 @@ mod tests {
     fn test_create_meter() -> Result<(), Box<dyn Error>> {
         let mut meter = Builder::new();
 
-        meter.current(0).build()?;
+        meter.set_current(0).build()?;
         assert_eq!(meter, "⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️");
 
-        meter.current(1).length(10).max(10).build()?;
+        meter.set_current(1).set_length(10).set_max(10).build()?;
         assert_eq!(meter, "🟩⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️");
 
-        meter.current(5.5).build()?;
+        meter.set_current(5.5).build()?;
         assert_eq!(meter, "🟨🟨🟨🟨🟨⬜️⬜️⬜️⬜️⬜️");
 
-        meter.current(7.1).build()?;
+        meter.set_current(7.1).build()?;
         assert_eq!(meter, "🟧🟧🟧🟧🟧🟧🟧⬜️⬜️⬜️");
 
-        meter.current(9.4).build()?;
+        meter.set_current(9.4).build()?;
         assert_eq!(meter, "🟥🟥🟥🟥🟥🟥🟥🟥🟥⬜️");
 
-        meter.length(5).build()?;
+        meter.set_length(5).build()?;
         assert_eq!(meter, "🟥🟥🟥🟥⬜️");
 
-        meter.length(20).build()?;
+        meter.set_length(20).build()?;
         assert_eq!(meter, "🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥⬜️⬜️");
 
         Ok(())

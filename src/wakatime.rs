@@ -4,8 +4,6 @@ use serde::Deserialize;
 use serde_json::from_str;
 use std::error::Error;
 
-use crate::util::get_env_var;
-
 #[derive(Deserialize, Debug)]
 struct Summary {
     cummulative_total: Option<Total>,
@@ -17,16 +15,16 @@ struct Total {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct WakaTime {
+pub struct WakaTime {
     client: Client,
     base_url: Url,
     api_key: String,
 }
 
 impl WakaTime {
-    pub(crate) fn new() -> Result<Self, Box<dyn Error>> {
-        let api_key = get_env_var("WAKATIME_API_KEY")?;
+    pub fn new(api_key: &str) -> Result<Self, Box<dyn Error>> {
         let base_url = "https://wakatime.com".parse()?;
+        let api_key = api_key.to_string();
 
         Ok(Self {
             client: Client::new(),
@@ -57,10 +55,7 @@ impl WakaTime {
     ///     Ok(())
     /// }
     /// ```
-    pub(crate) async fn get_time_last_n_days(
-        &self,
-        days: i64,
-    ) -> Result<Option<f64>, Box<dyn Error>> {
+    pub async fn get_time_last_n_days(&self, days: i64) -> Result<Option<f64>, Box<dyn Error>> {
         let start_date = Self::get_start_datetime(days);
         let end_date = Self::get_end_datetime();
 
@@ -161,7 +156,7 @@ mod tests {
                 );
         });
 
-        let mut client = WakaTime::new()?;
+        let mut client = WakaTime::new("test")?;
 
         client.base_url = mock_server.base_url().parse()?;
         let response = client.get_time_last_n_days(30).await;

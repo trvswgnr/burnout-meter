@@ -6,7 +6,7 @@ use std::error::Error;
 
 #[derive(Deserialize, Debug)]
 struct Summary {
-    cummulative_total: Option<Total>,
+    cumulative_total: Option<Total>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -74,9 +74,10 @@ impl WakaTime {
             .await?;
 
         let body = response.text().await?;
+
         let result: Summary = from_str(&body)?;
 
-        match result.cummulative_total {
+        match result.cumulative_total {
             Some(total) => Ok(Some(total.decimal.parse()?)),
             None => Ok(None),
         }
@@ -145,7 +146,7 @@ mod tests {
                 .header("content-type", "application/json")
                 .body(
                     json!({
-                        "cummulative_total": {
+                        "cumulative_total": {
                           "decimal": "155.00",
                           "digital": "155:00",
                           "seconds": 558020.669293,

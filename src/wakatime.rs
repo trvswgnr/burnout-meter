@@ -1,8 +1,8 @@
-use chrono::{Duration, Timelike, Utc};
 use reqwest::{Client, Url};
 use serde::Deserialize;
 use serde_json::from_str;
 use std::error::Error;
+use time::{format_description, Duration, OffsetDateTime};
 
 #[derive(Deserialize, Debug)]
 struct Summary {
@@ -87,44 +87,66 @@ impl WakaTime {
     ///
     /// Uses the `chrono` crate to get the current date and subtract the number of days.
     fn get_start_datetime(days: i64) -> String {
-        let mut datetime = Utc::now() - Duration::days(days);
+        let mut offset_date_time: OffsetDateTime = OffsetDateTime::now_utc() - Duration::days(days);
 
         // remove the nanoseconds from the datetime
-        datetime = datetime.with_nanosecond(0).unwrap();
+        offset_date_time = offset_date_time.replace_nanosecond(0).unwrap();
 
         // return converted to RFC 3339 and ISO 8601 string (e.g. 2022-12-07T00:00:00+00:00)
-        datetime.to_rfc3339()
+        let format = format_description::parse(
+            "[year]-[month]-[day]T[hour]:[minute]:[second]+[offset_hour]:[offset_minute]",
+        )
+        .unwrap();
+
+        let time = offset_date_time.format(&format).unwrap();
+        println!("{time}");
+
+        time
     }
 
     /// Gets the end date as an ISO string for the WakaTime API request.
     fn get_end_datetime() -> String {
-        let mut datetime = Utc::now();
+        let mut offset_date_time = OffsetDateTime::now_utc();
 
         // remove the nanoseconds from the datetime
-        datetime = datetime.with_nanosecond(0).unwrap();
+        offset_date_time = offset_date_time.replace_nanosecond(0).unwrap();
 
         // return converted to RFC 3339 and ISO 8601 string (e.g. 2022-12-07T00:00:00+00:00)
-        datetime.to_rfc3339()
+        let format = format_description::parse(
+            "[year]-[month]-[day]T[hour]:[minute]:[second]+[offset_hour]:[offset_minute]",
+        )
+        .unwrap();
+
+        let time = offset_date_time.format(&format).unwrap();
+        println!("{time}");
+
+        time
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::WakaTime;
-    use chrono::{Duration, NaiveDate};
     use httpmock::prelude::*;
     use serde_json::json;
     use std::error::Error;
+    use time::{format_description, OffsetDateTime};
 
     #[test]
     fn test_get_start_and_end_dates() -> Result<(), Box<dyn Error>> {
         let start = WakaTime::get_start_datetime(30);
         let end = WakaTime::get_end_datetime();
 
-        let start_date = NaiveDate::parse_from_str(&start[..10], "%Y-%m-%d")?;
-        let end_date = NaiveDate::parse_from_str(&end[..10], "%Y-%m-%d")?;
+        let format = format_description::parse(
+            "[year]-[month]-[day]T[hour]:[minute]:[second]+[offset_hour]:[offset_minute]",
+        )?;
+        let start_datetime = OffsetDateTime::parse(start.as_str(), &format)?;
+        let end_datetime = OffsetDateTime::parse(end.as_str(), &format)?;
 
-        assert_eq!(start_date, end_date - Duration::days(30));
+        let start_date = start_datetime.date();
+        let end_date = end_datetime.date();
+
+        assert_eq!(start_date, end_date - time::Duration::days(30));
 
         Ok(())
     }

@@ -2,7 +2,7 @@ use reqwest::{Client, Url};
 use serde::Deserialize;
 use serde_json::from_str;
 use std::error::Error;
-use time::{format_description, Duration, OffsetDateTime};
+use time::{self, format_description::well_known::Rfc3339, OffsetDateTime};
 
 #[derive(Deserialize, Debug)]
 struct Summary {
@@ -84,44 +84,26 @@ impl WakaTime {
     }
 
     /// Gets the start date as an ISO string for the WakaTime API request.
-    ///
-    /// Uses the `chrono` crate to get the current date and subtract the number of days.
     fn get_start_datetime(days: i64) -> String {
-        let mut offset_date_time: OffsetDateTime = OffsetDateTime::now_utc() - Duration::days(days);
-
-        // remove the nanoseconds from the datetime
-        offset_date_time = offset_date_time.replace_nanosecond(0).unwrap();
-
-        // return converted to RFC 3339 and ISO 8601 string (e.g. 2022-12-07T00:00:00+00:00)
-        let format = format_description::parse(
-            "[year]-[month]-[day]T[hour]:[minute]:[second]+[offset_hour]:[offset_minute]",
-        )
-        .unwrap();
-
-        let time = offset_date_time.format(&format).unwrap();
-        println!("{time}");
-
-        time
+        get_datetime(OffsetDateTime::now_utc() - time::Duration::days(days))
     }
 
     /// Gets the end date as an ISO string for the WakaTime API request.
     fn get_end_datetime() -> String {
-        let mut offset_date_time = OffsetDateTime::now_utc();
-
-        // remove the nanoseconds from the datetime
-        offset_date_time = offset_date_time.replace_nanosecond(0).unwrap();
-
-        // return converted to RFC 3339 and ISO 8601 string (e.g. 2022-12-07T00:00:00+00:00)
-        let format = format_description::parse(
-            "[year]-[month]-[day]T[hour]:[minute]:[second]+[offset_hour]:[offset_minute]",
-        )
-        .unwrap();
-
-        let time = offset_date_time.format(&format).unwrap();
-        println!("{time}");
-
-        time
+        get_datetime(OffsetDateTime::now_utc())
     }
+}
+
+/// Uses the `time` crate to get the date from the `OffsetDateTime` and
+/// convert it to an ISO string.
+fn get_datetime(mut offset_date_time: OffsetDateTime) -> String {
+    // remove the nanoseconds from the datetime
+    offset_date_time = offset_date_time.replace_nanosecond(0).unwrap();
+
+    // convert to RFC 3339 format
+    offset_date_time
+        .format(&Rfc3339)
+        .expect("Failed to format date")
 }
 
 #[cfg(test)]
@@ -130,18 +112,15 @@ mod tests {
     use httpmock::prelude::*;
     use serde_json::json;
     use std::error::Error;
-    use time::{format_description, OffsetDateTime};
+    use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
     #[test]
     fn test_get_start_and_end_dates() -> Result<(), Box<dyn Error>> {
         let start = WakaTime::get_start_datetime(30);
         let end = WakaTime::get_end_datetime();
 
-        let format = format_description::parse(
-            "[year]-[month]-[day]T[hour]:[minute]:[second]+[offset_hour]:[offset_minute]",
-        )?;
-        let start_datetime = OffsetDateTime::parse(start.as_str(), &format)?;
-        let end_datetime = OffsetDateTime::parse(end.as_str(), &format)?;
+        let start_datetime = OffsetDateTime::parse(start.as_str(), &Rfc3339)?;
+        let end_datetime = OffsetDateTime::parse(end.as_str(), &Rfc3339)?;
 
         let start_date = start_datetime.date();
         let end_date = end_datetime.date();

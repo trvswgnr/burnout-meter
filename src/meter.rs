@@ -30,7 +30,7 @@ impl Builder {
         let max: f64 = get_env_var("BURNOUT_LIMIT").unwrap_or(160f64);
         let length = get_env_var("METER_LENGTH").unwrap_or(8u8);
         let meter = Self::create_meter(current, max, length).unwrap_or_else(|_| {
-            panic!("Failed to create meter. Current value: {:?}", current);
+            panic!("Failed to create meter. Current value: {current:?}");
         });
 
         Self {
@@ -137,7 +137,7 @@ impl Display for Builder {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let meter = &self.meter;
 
-        write!(f, "{}", meter)
+        write!(f, "{meter}")
     }
 }
 

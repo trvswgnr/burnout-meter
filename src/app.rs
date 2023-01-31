@@ -15,12 +15,12 @@ pub struct App {
 
 impl App {
     pub fn new(settings: AppSettings) -> Result<Self, Box<dyn Error>> {
-        return Ok(Self {
+        Ok(Self {
             wakatime: WakaTime::new(settings.wakatime_api_key())?,
             twitter: Twitter::new(settings.twitter_credentials())?,
             burnout_meter: meter::Builder::new(),
             settings,
-        });
+        })
     }
 
     pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
@@ -29,7 +29,10 @@ impl App {
             .get_time_last_n_days(self.settings.burnout_days())
             .await
         {
-            Ok(hours) => hours.unwrap(),
+            Ok(hours) => match hours {
+                Some(hours) => hours,
+                None => panic!("No hours found from WakaTime"),
+            },
             Err(_) => panic!("Failed to get hours from WakaTime"),
         };
 
@@ -97,8 +100,8 @@ impl Default for AppSettings {
                 access_token: get_env_var("TWITTER_ACCESS_TOKEN").unwrap(),
                 access_token_secret: get_env_var("TWITTER_ACCESS_TOKEN_SECRET").unwrap(),
             },
-            burnout_limit: get_env_var("BURNOUT_LIMIT").unwrap_or(180.0),
-            burnout_days: get_env_var("BURNOUT_DAYS").unwrap_or(30),
+            burnout_limit: get_env_var("BURNOUT_LIMIT").unwrap_or(50.0),
+            burnout_days: get_env_var("BURNOUT_DAYS").unwrap_or(7),
             meter_length: get_env_var("METER_LENGTH").unwrap_or(8),
         }
     }

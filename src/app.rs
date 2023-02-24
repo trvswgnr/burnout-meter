@@ -1,3 +1,5 @@
+use chrono::Datelike;
+
 use crate::{
     meter,
     twitter::{self, Twitter},
@@ -24,11 +26,22 @@ impl App {
     }
 
     pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
-        let hours = match self
-            .wakatime
-            .get_time_last_n_days(self.settings.burnout_days())
-            .await
-        {
+        // start week on Monday, end week on Sunday
+        let days_since_monday = days_since_monday();
+        fn days_since_monday() -> i64 {
+            let current_time = chrono::offset::Local::now();
+            let today = current_time.date_naive().weekday();
+            match today {
+                chrono::Weekday::Mon => 1,
+                chrono::Weekday::Tue => 2,
+                chrono::Weekday::Wed => 3,
+                chrono::Weekday::Thu => 4,
+                chrono::Weekday::Fri => 5,
+                chrono::Weekday::Sat => 6,
+                chrono::Weekday::Sun => 7,
+            }
+        }
+        let hours = match self.wakatime.get_time_last_n_days(days_since_monday).await {
             Ok(hours) => match hours {
                 Some(hours) => hours,
                 None => panic!("No hours found from WakaTime"),
@@ -42,7 +55,15 @@ impl App {
             .set_current(hours)
             .build()?;
 
-        let location = format!("{} to burnout", self.burnout_meter);
+        // round hours to int
+        let xhours = hours.round() as i64;
+
+        let location = format!(
+            "{} {}/{} hours",
+            self.burnout_meter,
+            xhours,
+            self.burnout_meter.max()
+        );
         let profile = self.twitter.update_location(location).await?;
 
         match profile.location {

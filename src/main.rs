@@ -20,5 +20,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let settings = AppSettings::default();
     let mut app = App::new(settings)?;
     app.run().await?;
+
     Ok(())
 }

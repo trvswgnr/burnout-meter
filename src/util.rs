@@ -21,3 +21,11 @@ pub fn get_env_var<T: FromStr>(key: &str) -> Result<T, Box<dyn Error>> {
         Err(_) => Err(format!("{key} not set").into()),
     }
 }
+
+pub fn days_since_monday(offset_hours: i8) -> i64 {
+    let offset = time::UtcOffset::from_hms(offset_hours, 0, 0).unwrap_or(time::UtcOffset::UTC);
+    let now = time::OffsetDateTime::now_utc().to_offset(offset);
+    let monday = now - time::Duration::days(now.weekday().number_from_monday() as i64);
+    let days = now - monday;
+    days.whole_days()
+}

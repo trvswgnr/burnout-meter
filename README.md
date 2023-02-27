@@ -29,8 +29,8 @@ It uses cron with GitHub Actions to run every 6 hours, but can also be run manua
     - `TWITTER_CONSUMER_KEY` - Consumer API key for your Twitter app
     - `TWITTER_CONSUMER_SECRET` - Consumer API secret key for your Twitter app
 1. You can also optionaly set the following secrets to customize the meter:
-    - `BURNOUT_DAYS` - The number of days to use for calculating burnout (default: 30)
-    - `BURNOUT_LIMIT` - The number of hours you want to be considered "burned out" (default: 180)
+    - `TIMEZONE_OFFSET` - The timezone offset in hours (default: 0 for UTC)
+    - `BURNOUT_LIMIT` - The number of hours before you're to be considered "burned out" (default: 40)
     - `METER_LENGTH` - The number of emoji to use for the meter (default: 8)
 
 ## License

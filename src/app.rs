@@ -1,8 +1,7 @@
-use chrono::Datelike;
-
 use crate::{
     meter,
     twitter::{self, Twitter},
+    util::days_since_monday,
     util::get_env_var,
     wakatime::WakaTime,
 };
@@ -27,20 +26,9 @@ impl App {
 
     pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         // start week on Monday, end week on Sunday
-        let days_since_monday = days_since_monday();
-        fn days_since_monday() -> i64 {
-            let current_time = chrono::offset::Local::now();
-            let today = current_time.date_naive().weekday();
-            match today {
-                chrono::Weekday::Mon => 1,
-                chrono::Weekday::Tue => 2,
-                chrono::Weekday::Wed => 3,
-                chrono::Weekday::Thu => 4,
-                chrono::Weekday::Fri => 5,
-                chrono::Weekday::Sat => 6,
-                chrono::Weekday::Sun => 7,
-            }
-        }
+        let offset_hours = self.settings.timezone_offset();
+        let days_since_monday = days_since_monday(offset_hours);
+        // uses `time` crate to get the number of days since Monday
         let hours = match self.wakatime.get_time_last_n_days(days_since_monday).await {
             Ok(hours) => match hours {
                 Some(hours) => hours,
@@ -55,13 +43,12 @@ impl App {
             .set_current(hours)
             .build()?;
 
-        // round hours to int
-        let xhours = hours.round() as i64;
+        let hours_rounded = hours.round() as i64;
 
         let location = format!(
             "{} {}/{} hours",
             self.burnout_meter,
-            xhours,
+            hours_rounded,
             self.burnout_meter.max()
         );
         let profile = self.twitter.update_location(location).await?;
@@ -85,7 +72,7 @@ pub struct AppSettings {
     wakatime_api_key: String,
     twitter_credentials: twitter::Credentials,
     burnout_limit: f64,
-    burnout_days: i64,
+    timezone_offset: i8,
     meter_length: u8,
 }
 
@@ -102,8 +89,8 @@ impl AppSettings {
         self.burnout_limit
     }
 
-    fn burnout_days(&self) -> i64 {
-        self.burnout_days
+    fn timezone_offset(&self) -> i8 {
+        self.timezone_offset
     }
 
     fn meter_length(&self) -> u8 {
@@ -121,8 +108,8 @@ impl Default for AppSettings {
                 access_token: get_env_var("TWITTER_ACCESS_TOKEN").unwrap(),
                 access_token_secret: get_env_var("TWITTER_ACCESS_TOKEN_SECRET").unwrap(),
             },
-            burnout_limit: get_env_var("BURNOUT_LIMIT").unwrap_or(50.0),
-            burnout_days: get_env_var("BURNOUT_DAYS").unwrap_or(7),
+            burnout_limit: get_env_var("BURNOUT_LIMIT").unwrap_or(40.0),
+            timezone_offset: get_env_var("TIMEZONE_OFFSET").unwrap_or(0),
             meter_length: get_env_var("METER_LENGTH").unwrap_or(8),
         }
     }

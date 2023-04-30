@@ -1,4 +1,4 @@
-\* This now only works if you have a paid subscription to the Twitter API, which doesn't currently have a reasonably prices tier for hobbiests. Unfortunately, I can't recommend using this anymore.
+\* This now only works if you have a paid subscription to the Twitter API, which doesn't currently offer a reasonably priced tier for hobbyists. Unfortunately, I can't recommend using this anymore.
 
 # WakaTime Code Burnout Meter in Twitter Profile
 

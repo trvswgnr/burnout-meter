@@ -1,3 +1,5 @@
+\* This now only works if you have a paid subscription to the Twitter API, which doesn't currently have a reasonably prices tier for hobbiests. Unfortunately, I can't recommend using this anymore.
+
 # WakaTime Code Burnout Meter in Twitter Profile
 
 ![tests](https://github.com/trvswgnr/burnout-meter/actions/workflows/test.yml/badge.svg?branch=main)
